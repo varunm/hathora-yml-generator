@@ -1,0 +1,4 @@
+types:
+  Test:
+    id: boolean
+    isChef: boolean?
