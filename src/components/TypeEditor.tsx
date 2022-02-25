@@ -1,6 +1,6 @@
 import { Flex } from "@chakra-ui/react";
 import yaml from "js-yaml";
-import React from "react";
+import React, { useState } from "react";
 import { YMLViewer } from "./YMLViewer";
 
 class PropertyDefinition {
@@ -43,7 +43,7 @@ interface HathoraYmlDefinition {
 }
 
 export function TypeEditor() {
-    const test: HathoraYmlDefinition = {
+    const [config, setConfig] = useState<HathoraYmlDefinition>({
         types: {
             "MyAlias": new PropertyDefinition("string", true, false).toJSON(),
             "UserState": {
@@ -56,12 +56,12 @@ export function TypeEditor() {
         userState: "UserState",
         initialize: "initMethod",
         error: "string",
-    };
+    });
 
-    console.log(yaml.dump(test));
+    console.log(yaml.dump(config));
     return (
         <Flex justifyContent='space-around'>
-            <div>FORM</div>
-            <YMLViewer content={yaml.dump(test)}/>
+            <Flex width='50%'>FORM</Flex>
+            <YMLViewer content={yaml.dump(config)}/>
         </Flex>);
 }
