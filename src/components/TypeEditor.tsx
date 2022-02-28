@@ -13,9 +13,15 @@ import {
     TagCloseButton,
     TagLabel,
 } from "@chakra-ui/react";
-import { StringOrNumber } from "@chakra-ui/utils";
+import { isEmpty, StringOrNumber } from "@chakra-ui/utils";
 import yaml from "js-yaml";
-import { filter, keyBy, map, mapValues } from "lodash";
+import {
+    filter,
+    keyBy,
+    map,
+    mapValues,
+    set,
+} from "lodash";
 import React, { useState } from "react";
 import { z } from "zod";
 import { PRIMITIVES } from "../constants";
@@ -100,6 +106,7 @@ export function TypeEditor() {
             name: "MyAlias",
             type: "Alias",
             typeDescription: {
+                isArray: true,
                 type: PRIMITIVES.STRING,
             },
         },
@@ -144,17 +151,30 @@ export function TypeEditor() {
     const sortedKeysTypes = Object.keys(config.types);
     sortedKeysTypes.sort();
 
-    const onSelect = (index: number) => (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const onSelect = (index: number, fieldName?: string) => (event: React.ChangeEvent<HTMLSelectElement>) => {
         const updatedTypes = [...types];
         const definition = types[index];
 
         if (definition.type === "Alias") {
-            updatedTypes[index] = {
-                ...definition,
-                typeDescription: {
-                    type: event.target.value as PRIMITIVES,
-                },
-            };
+            set(definition, "typeDescription.type", event.target.value as PRIMITIVES);
+            updatedTypes[index] = definition;
+        }
+
+        if ((definition.type === "Object") && (fieldName != undefined)) {
+            set(definition, ["fields", fieldName, "type"], event.target.value as PRIMITIVES);
+            updatedTypes[index] = definition;
+        }
+        setTypes(updatedTypes);
+    };
+
+    const onFieldNameUpdated = (index: number, fieldName: string) => (nextValue: string) => {
+        const updatedTypes = [...types];
+        const definition = types[index];
+
+        if (definition.type === "Object") {
+            definition.fields[nextValue] = definition.fields[fieldName];
+            delete definition.fields[fieldName];
+            updatedTypes[index] = definition;
         }
         setTypes(updatedTypes);
     };
@@ -182,7 +202,7 @@ export function TypeEditor() {
         }
     };
 
-    const onCheckboxClicked = (index: number) => (values: StringOrNumber[]) => {
+    const onCheckboxClicked = (index: number, fieldName?: string) => (values: StringOrNumber[]) => {
         const updatedTypes = [...types];
         const definition = types[index];
 
@@ -196,10 +216,16 @@ export function TypeEditor() {
                 },
             };
         }
+
+        if ((definition.type === "Object") && (fieldName != undefined)) {
+            set(definition, ["fields", fieldName, "isArray"], values.includes("array"));
+            set(definition, ["fields", fieldName, "isOptional"], values.includes("optional"));
+            updatedTypes[index] = definition;
+        }
         setTypes(updatedTypes);
     };
 
-    const onEnumTagDelete = (index: number, enumLabel: string) => (_event: React.MouseEvent<HTMLButtonElement>) => {
+    const onTypeTagDelete = (index: number, enumLabel: string) => (_event: React.MouseEvent<HTMLButtonElement>) => {
         const updatedTypes = [...types];
         const definition = types[index];
 
@@ -209,10 +235,18 @@ export function TypeEditor() {
                 enums: filter(definition.enums, label => label !== enumLabel),
             };
         }
+
+        if (definition.type === "Union") {
+            updatedTypes[index] = {
+                ...definition,
+                unions: filter(definition.unions, label => label !== enumLabel),
+            };
+        }
+
         setTypes(updatedTypes);
     };
 
-    const onNewEnumAdded = (index: number) => (nextValue: string) => {
+    const onNewTypeAdded = (index: number) => (nextValue: string) => {
         if (nextValue === "") {
             return;
         }
@@ -226,6 +260,16 @@ export function TypeEditor() {
             updatedTypes[index] = {
                 ...definition,
                 enums: newEnums,
+            };
+        }
+
+        if ((definition.type === "Union") && (!definition.unions.includes(nextValue))) {
+            const newUnions = definition.unions;
+            // TODO validate unique
+            newUnions.push(nextValue);
+            updatedTypes[index] = {
+                ...definition,
+                unions: newUnions,
             };
         }
         setTypes(updatedTypes);
@@ -249,10 +293,16 @@ export function TypeEditor() {
                         <Select placeholder='Select option' onChange={onSelect(index)} value={definition.typeDescription.type}>
                             {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
                         </Select>
-                        <CheckboxGroup colorScheme='green' onChange={onCheckboxClicked(index)}>
+                        <CheckboxGroup
+                            colorScheme='green'
+                            onChange={onCheckboxClicked(index)}
+                            defaultValue={[
+                                definition.typeDescription.isArray ? "array": "", definition.typeDescription.isOptional ? "optional" : "",
+                            ].filter(val => !isEmpty(val))}
+                        >
                             <Stack ml='2' spacing={[1, 5]} direction={["column", "row"]}>
-                                <Checkbox value="array" checked={definition.typeDescription.isArray}>Array</Checkbox>
-                                <Checkbox value="optional" checked={definition.typeDescription.isOptional}>Optional</Checkbox>
+                                <Checkbox value="array">Array</Checkbox>
+                                <Checkbox value="optional">Optional</Checkbox>
                             </Stack>
                         </CheckboxGroup>
                     </Flex>
@@ -275,7 +325,7 @@ export function TypeEditor() {
                         <Editable
                             placeholder="Add new Enum value"
                             submitOnBlur={false}
-                            onSubmit={onNewEnumAdded(index)}
+                            onSubmit={onNewTypeAdded(index)}
                         >
                             <EditablePreview />
                             <EditableInput />
@@ -290,7 +340,7 @@ export function TypeEditor() {
                                     colorScheme='green'
                                 >
                                     <TagLabel>{enumLabel}</TagLabel>
-                                    <TagCloseButton onClick={onEnumTagDelete(index, enumLabel)} />
+                                    <TagCloseButton onClick={onTypeTagDelete(index, enumLabel)} />
                                 </Tag>
                             )}
                         </Stack>
@@ -300,12 +350,89 @@ export function TypeEditor() {
         }
         if (definition.type === "Union") {
             return (
-                <div key={index}>union</div>
+                <FormControl key={index} mb='2'>
+                    <Flex direction='column'>
+                        <Editable
+                            defaultValue={definition.name}
+                            // onEdit={onEdit(definition.name)}
+                            // onChange={onNameChange}
+                            onSubmit={onNameUpdated(index)}
+                        >
+                            <EditablePreview />
+                            <EditableInput />
+                        </Editable>
+                        <Editable
+                            placeholder="Add new Union type"
+                            submitOnBlur={false}
+                            onSubmit={onNewTypeAdded(index)}
+                        >
+                            <EditablePreview />
+                            <EditableInput />
+                        </Editable>
+                        <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
+                            {map(definition.unions.sort(), enumLabel =>
+                                <Tag
+                                    size='md'
+                                    key={enumLabel}
+                                    borderRadius='full'
+                                    variant='solid'
+                                    colorScheme='green'
+                                >
+                                    <TagLabel>{enumLabel}</TagLabel>
+                                    <TagCloseButton onClick={onTypeTagDelete(index, enumLabel)} />
+                                </Tag>
+                            )}
+                        </Stack>
+                    </Flex>
+                </FormControl>
             );
         }
         if (definition.type === "Object") {
+            console.log("Object", definition);
             return (
-                <div key={index}>object</div>
+                <FormControl key={index} mb='2'>
+                    <Flex direction='column'>
+                        <Editable
+                            defaultValue={definition.name}
+                            // onEdit={onEdit(definition.name)}
+                            // onChange={onNameChange}
+                            onSubmit={onNameUpdated(index)}
+                        >
+                            <EditablePreview />
+                            <EditableInput />
+                        </Editable>
+                        <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
+                            {map(definition.fields, (field, name) => {
+                                return (
+                                    <Flex direction='row' key={name}>
+                                        <Editable
+                                            defaultValue={name}
+                                            onSubmit={onFieldNameUpdated(index, name)}
+                                        >
+                                            <EditablePreview />
+                                            <EditableInput />
+                                        </Editable>
+                                        <Select placeholder='Select option' onChange={onSelect(index, name )} value={field.type}>
+                                            {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
+                                        </Select>
+                                        <CheckboxGroup
+                                            colorScheme='green'
+                                            onChange={onCheckboxClicked(index, name)}
+                                            defaultValue={[
+                                                field.isArray ? "array": "", field.isOptional ? "optional" : "",
+                                            ].filter(val => !isEmpty(val))}
+                                        >
+                                            <Stack ml='2' spacing={[1, 5]} direction={["column", "row"]}>
+                                                <Checkbox value="array">Array</Checkbox>
+                                                <Checkbox value="optional">Optional</Checkbox>
+                                            </Stack>
+                                        </CheckboxGroup>
+                                    </Flex>);
+                            }
+                            )}
+                        </Stack>
+                    </Flex>
+                </FormControl>
             );
         }
     };
