@@ -1,12 +1,17 @@
+import { AddIcon } from "@chakra-ui/icons";
 import {
+    Box,
+    Button,
     Checkbox,
     CheckboxGroup,
+    CloseButton,
     Editable,
     EditableInput,
     EditablePreview,
     Flex,
     FormControl,
     Heading,
+    Input,
     Select,
     Stack,
     Tag,
@@ -25,6 +30,7 @@ import {
 import React, { useState } from "react";
 import { z } from "zod";
 import { PRIMITIVES } from "../constants";
+import { TypeName } from "./TypeName";
 import { YMLViewer } from "./YMLViewer";
 
 const TypeDescription = z.object({
@@ -58,13 +64,13 @@ const ObjectType = BaseType.extend({
 });
 
 const TypeDefinition = z.discriminatedUnion("type", [AliasType, EnumType, UnionType, ObjectType]);
-
 type TypeDescription = z.infer<typeof TypeDescription>;
 type AliasType = z.infer<typeof AliasType>;
 type EnumType = z.infer<typeof EnumType>;
 type UnionType = z.infer<typeof UnionType>;
 type ObjectType = z.infer<typeof ObjectType>;
 type TypeDefinition = z.infer<typeof TypeDefinition>;
+type TypeUnion = "Alias" | "Enum" | "Union" | "Object";
 
 const toStringTypeDescription = (typeDescription: TypeDescription) => {
     return typeDescription.type + (typeDescription.isArray ? "[]" : "") + (typeDescription.isOptional ? "?" : "");
@@ -99,8 +105,9 @@ interface HathoraYmlDefinition {
 }
 
 export function TypeEditor() {
+    const [newTypeName, setNewTypeName] = useState<string>("");
+    const [newType, setNewType] = useState<string>("");
     const [isEditing, setIsEditing] = useState<boolean>(false);
-    const [editingText, setEditingText] = useState<string>("");
     const [types, setTypes] = useState<TypeDefinition[]>([
         {
             name: "MyAlias",
@@ -120,14 +127,14 @@ export function TypeEditor() {
             },
         },
         {
-            name: "MyUnion",
-            type: "Union",
-            unions: ["UserState", "AnotherState"],
-        },
-        {
             name: "MyEnum",
             type: "Enum",
             enums: ["VAL_1", "VAL_2"],
+        },
+        {
+            name: "MyUnion",
+            type: "Union",
+            unions: ["UserState", "AnotherState"],
         },
     ]);
     const [config, setConfig] = useState<HathoraYmlDefinition>({
@@ -191,17 +198,6 @@ export function TypeEditor() {
         setIsEditing(false);
     };
 
-    const onNameChange = (nextValue: string) => {
-        setEditingText(nextValue);
-    };
-
-    const onEdit = (initialName: string) => () => {
-        if (!isEditing) {
-            setEditingText(initialName);
-            setIsEditing(true);
-        }
-    };
-
     const onCheckboxClicked = (index: number, fieldName?: string) => (values: StringOrNumber[]) => {
         const updatedTypes = [...types];
         const definition = types[index];
@@ -225,28 +221,34 @@ export function TypeEditor() {
         setTypes(updatedTypes);
     };
 
-    const onTypeTagDelete = (index: number, enumLabel: string) => (_event: React.MouseEvent<HTMLButtonElement>) => {
+    const onTypeTagDelete = (index: number, typeLabel: string) => (_event: React.MouseEvent<HTMLButtonElement>) => {
         const updatedTypes = [...types];
         const definition = types[index];
 
         if (definition.type === "Enum") {
             updatedTypes[index] = {
                 ...definition,
-                enums: filter(definition.enums, label => label !== enumLabel),
+                enums: filter(definition.enums, label => label !== typeLabel),
             };
         }
 
         if (definition.type === "Union") {
             updatedTypes[index] = {
                 ...definition,
-                unions: filter(definition.unions, label => label !== enumLabel),
+                unions: filter(definition.unions, label => label !== typeLabel),
             };
         }
 
         setTypes(updatedTypes);
     };
 
-    const onNewTypeAdded = (index: number) => (nextValue: string) => {
+    const deleteType = (index: number) => (_event: React.MouseEvent<HTMLButtonElement>) => {
+        const updatedTypes = [...types];
+        updatedTypes.splice(index, 1);
+        setTypes(updatedTypes);
+    };
+
+    const onNewEnumUnionAdded = (index: number) => (nextValue: string) => {
         if (nextValue === "") {
             return;
         }
@@ -275,28 +277,64 @@ export function TypeEditor() {
         setTypes(updatedTypes);
     };
 
+    const onNewTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setNewType(event.target.value);
+    };
+
+    const onNewTypeNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setNewTypeName(event.target.value);
+    };
+
+    const newTypeAdded = () => {
+        console.log("newTypeAdded");
+        console.log(newType);
+        console.log(newTypeName);
+        const updatedTypes = [...types];
+
+        if (newType === "Alias") {
+            updatedTypes.push({
+                type: "Alias", name: newTypeName, typeDescription: {
+                    type: "string",
+                },
+            });
+        }
+
+        if (newType === "Enum") {
+            updatedTypes.push({
+                type: "Enum", name: newTypeName, enums: [],
+            });
+        }
+
+        if (newType === "Union") {
+            updatedTypes.push({
+                type: "Union", name: newTypeName, unions: [],
+            });
+        }
+
+        if (newType === "Object") {
+            updatedTypes.push({
+                type: "Object", name: newTypeName, fields: {},
+            });
+        }
+
+        setTypes(updatedTypes);
+        setNewType("");
+        setNewTypeName("");
+    };
+
     const renderType = (definition: TypeDefinition, index: number) => {
         if (definition.type === "Alias") {
             return (
-                <FormControl key={index} mb='2'>
+                <FormControl key={definition.name} mb='2'>
                     <Flex direction='row'>
-                        <Editable
-                            defaultValue={definition.name}
-                            // value={isEditing ? editingText : definition.name}
-                            // onEdit={onEdit(definition.name)}
-                            // onChange={onNameChange}
-                            onSubmit={onNameUpdated(index)}
-                        >
-                            <EditablePreview />
-                            <EditableInput />
-                        </Editable>
+                        <TypeName name={definition.name} onSubmit={onNameUpdated(index)} />
                         <Select placeholder='Select option' onChange={onSelect(index)} value={definition.typeDescription.type}>
                             {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
                         </Select>
                         <CheckboxGroup
                             colorScheme='green'
                             onChange={onCheckboxClicked(index)}
-                            defaultValue={[
+                            value={[
                                 definition.typeDescription.isArray ? "array": "", definition.typeDescription.isOptional ? "optional" : "",
                             ].filter(val => !isEmpty(val))}
                         >
@@ -305,27 +343,23 @@ export function TypeEditor() {
                                 <Checkbox value="optional">Optional</Checkbox>
                             </Stack>
                         </CheckboxGroup>
+                        <CloseButton onClick={deleteType(index)}/>
                     </Flex>
                 </FormControl>
             );
         }
         if (definition.type === "Enum") {
             return (
-                <FormControl key={index} mb='2'>
+                <FormControl key={definition.name} mb='2'>
                     <Flex direction='column'>
-                        <Editable
-                            defaultValue={definition.name}
-                            // onEdit={onEdit(definition.name)}
-                            // onChange={onNameChange}
-                            onSubmit={onNameUpdated(index)}
-                        >
-                            <EditablePreview />
-                            <EditableInput />
-                        </Editable>
+                        <Flex direction='row'>
+                            <TypeName name={definition.name} onSubmit={onNameUpdated(index)} />
+                            <CloseButton onClick={deleteType(index)}/>
+                        </Flex>
                         <Editable
                             placeholder="Add new Enum value"
                             submitOnBlur={false}
-                            onSubmit={onNewTypeAdded(index)}
+                            onSubmit={onNewEnumUnionAdded(index)}
                         >
                             <EditablePreview />
                             <EditableInput />
@@ -350,21 +384,16 @@ export function TypeEditor() {
         }
         if (definition.type === "Union") {
             return (
-                <FormControl key={index} mb='2'>
+                <FormControl key={definition.name} mb='2'>
                     <Flex direction='column'>
-                        <Editable
-                            defaultValue={definition.name}
-                            // onEdit={onEdit(definition.name)}
-                            // onChange={onNameChange}
-                            onSubmit={onNameUpdated(index)}
-                        >
-                            <EditablePreview />
-                            <EditableInput />
-                        </Editable>
+                        <Flex direction='row'>
+                            <TypeName name={definition.name} onSubmit={onNameUpdated(index)} />
+                            <CloseButton onClick={deleteType(index)}/>
+                        </Flex>
                         <Editable
                             placeholder="Add new Union type"
                             submitOnBlur={false}
-                            onSubmit={onNewTypeAdded(index)}
+                            onSubmit={onNewEnumUnionAdded(index)}
                         >
                             <EditablePreview />
                             <EditableInput />
@@ -388,25 +417,19 @@ export function TypeEditor() {
             );
         }
         if (definition.type === "Object") {
-            console.log("Object", definition);
             return (
-                <FormControl key={index} mb='2'>
+                <FormControl key={definition.name} mb='2'>
                     <Flex direction='column'>
-                        <Editable
-                            defaultValue={definition.name}
-                            // onEdit={onEdit(definition.name)}
-                            // onChange={onNameChange}
-                            onSubmit={onNameUpdated(index)}
-                        >
-                            <EditablePreview />
-                            <EditableInput />
-                        </Editable>
+                        <Flex direction='row'>
+                            <TypeName name={definition.name} onSubmit={onNameUpdated(index)} />
+                            <CloseButton onClick={deleteType(index)}/>
+                        </Flex>
                         <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
                             {map(definition.fields, (field, name) => {
                                 return (
                                     <Flex direction='row' key={name}>
                                         <Editable
-                                            defaultValue={name}
+                                            value={name}
                                             onSubmit={onFieldNameUpdated(index, name)}
                                         >
                                             <EditablePreview />
@@ -418,7 +441,7 @@ export function TypeEditor() {
                                         <CheckboxGroup
                                             colorScheme='green'
                                             onChange={onCheckboxClicked(index, name)}
-                                            defaultValue={[
+                                            value={[
                                                 field.isArray ? "array": "", field.isOptional ? "optional" : "",
                                             ].filter(val => !isEmpty(val))}
                                         >
@@ -442,6 +465,21 @@ export function TypeEditor() {
             <Flex direction='column' width='50%'>
                 <Heading size='md'>Types</Heading>
                 {map(types, renderType)}
+                <Box flexDirection='column'>
+                    <Heading size='sm'>Add New Type</Heading>
+                    <FormControl>
+                        <Input value={newTypeName} onChange={onNewTypeNameChange} placeholder="Name of new type" />
+                    </FormControl>
+                    <FormControl>
+                        <Select value={newType} onChange={onNewTypeChange} placeholder='Select type'>
+                            {map(["Alias", "Enum", "Union", "Object"], value => <option key={value} value={value}>{value}</option>)}
+                        </Select>
+                    </FormControl>
+                    <Button onClick={newTypeAdded} rightIcon={<AddIcon />} colorScheme='teal' variant='outline'>
+                        Add
+                    </Button>
+
+                </Box>
             </Flex>
             <YMLViewer content={yaml.dump(stringifiedConfig)}/>
         </Flex>);
