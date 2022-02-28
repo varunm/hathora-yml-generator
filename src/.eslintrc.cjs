@@ -12,7 +12,7 @@ module.exports = {
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "ecmaFeatures": {
-            "jsx": true, 
+            "jsx": true,
         },
         "ecmaVersion": 13,
         "sourceType": "module",
@@ -44,26 +44,28 @@ module.exports = {
         "no-multiple-empty-lines": [
             "error",
             {
-                "max": 1, "maxEOF": 1, 
+                "max": 1, "maxEOF": 1,
             },
         ],
         "eol-last": "error",
         "no-unused-vars": "off",
         "object-curly-newline": ["error", {
-            "ObjectExpression": "always",
+            "ObjectExpression": {
+                "minProperties": 1,
+            },
             "ObjectPattern": {
-                "multiline": true, "minProperties": 3, 
+                "multiline": true, "minProperties": 3,
             },
             "ImportDeclaration": {
                 "multiline": true,
             },
             "ExportDeclaration": {
-                "multiline": true, "minProperties": 3, 
+                "multiline": true, "minProperties": 3,
             },
         }],
         "import/order": ["error", {
             "newlines-between": "never", "alphabetize": {
-                "order": "asc", "caseInsensitive": true, 
+                "order": "asc", "caseInsensitive": true,
             },
         }],
         "import-newlines/enforce": "error",
@@ -75,17 +77,17 @@ module.exports = {
             "functions": "never",
         }],
         "object-curly-spacing": ["error", "always", {
-            "objectsInObjects": false, 
+            "objectsInObjects": false,
         }],
         "comma-spacing": ["error", {
-            "before": false, "after": true, 
+            "before": false, "after": true,
         }],
         "@typescript-eslint/no-unused-vars": "off",
         "unused-imports/no-unused-imports": "error",
         "unused-imports/no-unused-vars": [
             "warn",
             {
-                "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_", 
+                "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_",
             },
         ],
         "@typescript-eslint/no-empty-interface": "off",
@@ -99,5 +101,6 @@ module.exports = {
             "html": true,
         }],
         "react/jsx-uses-react": "error",
+        "no-trailing-spaces": "error",
     },
 };
