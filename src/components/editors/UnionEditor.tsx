@@ -1,20 +1,19 @@
 import {
-    CloseButton,
     Editable,
     EditableInput,
     EditablePreview,
-    Flex,
     FormControl,
     FormErrorMessage,
-    Stack,
     Tag,
     TagCloseButton,
     TagLabel,
+    VStack,
+    Wrap,
 } from "@chakra-ui/react";
 import { filter, isEmpty, map } from "lodash";
 import React, { useState } from "react";
 import { UnionType, TypeDefinition } from "../../HathoraTypes";
-import { TypeName } from "../TypeName";
+import { TypeNameHeader } from "../TypeNameHeader";
 
 interface IUnionEditorProps {
     definition: UnionType;
@@ -54,12 +53,12 @@ export function UnionEditor({
         });
     };
 
+    const unionLabels = definition.unions;
+    unionLabels.sort();
+
     return (
-        <Flex direction='column'>
-            <Flex direction='row'>
-                <TypeName definition={definition} updateDefinition={updateDefinition} />
-                <CloseButton onClick={deleteType}/>
-            </Flex>
+        <VStack align='flex-start'>
+            <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
             <FormControl isInvalid={!isEmpty(errorMessage)}>
                 <Editable
                     placeholder="Add new Union type"
@@ -71,8 +70,8 @@ export function UnionEditor({
                 </Editable>
                 <FormErrorMessage>{errorMessage}</FormErrorMessage>
             </FormControl>
-            <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
-                {map(definition.unions.sort(), unionLabel =>
+            <Wrap>
+                {map(unionLabels, unionLabel =>
                     <Tag
                         size='md'
                         key={unionLabel}
@@ -84,7 +83,7 @@ export function UnionEditor({
                         <TagCloseButton onClick={onUnionDeleted(unionLabel)} />
                     </Tag>
                 )}
-            </Stack>
-        </Flex>
+            </Wrap>
+        </VStack>
     );
 }

@@ -1,20 +1,19 @@
 import {
-    CloseButton,
     Editable,
     EditableInput,
     EditablePreview,
-    Flex,
     FormControl,
     FormErrorMessage,
-    Stack,
     Tag,
     TagCloseButton,
     TagLabel,
+    VStack,
+    Wrap,
 } from "@chakra-ui/react";
 import { filter, isEmpty, map } from "lodash";
 import React, { useState } from "react";
 import { EnumType, TypeDefinition } from "../../HathoraTypes";
-import { TypeName } from "../TypeName";
+import { TypeNameHeader } from "../TypeNameHeader";
 
 interface IEnumEditorProps {
     definition: EnumType;
@@ -55,11 +54,8 @@ export function EnumEditor({
     };
 
     return (
-        <Flex direction='column'>
-            <Flex direction='row'>
-                <TypeName definition={definition} updateDefinition={updateDefinition} />
-                <CloseButton onClick={deleteType}/>
-            </Flex>
+        <VStack align='flex-start' direction='column'>
+            <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
             <FormControl isInvalid={!isEmpty(errorMessage)}>
                 <Editable
                     placeholder="Add new Enum value"
@@ -71,7 +67,7 @@ export function EnumEditor({
                 </Editable>
                 <FormErrorMessage>{errorMessage}</FormErrorMessage>
             </FormControl>
-            <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
+            <Wrap>
                 {map(definition.enums.sort(), enumLabel =>
                     <Tag
                         size='md'
@@ -84,7 +80,7 @@ export function EnumEditor({
                         <TagCloseButton onClick={onEnumDeleted(enumLabel)} />
                     </Tag>
                 )}
-            </Stack>
-        </Flex>
+            </Wrap>
+        </VStack>
     );
 }

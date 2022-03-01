@@ -1,15 +1,17 @@
 import {
-    Checkbox,
-    CloseButton,
-    Flex,
+    HStack,
+    IconButton,
     Select,
-    Stack,
+    Tooltip,
+    VStack,
 } from "@chakra-ui/react";
 import { map } from "lodash";
 import React from "react";
+import { RiQuestionMark } from "react-icons/ri";
+import { VscSymbolArray } from "react-icons/vsc";
 import { PRIMITIVES } from "../../constants";
 import { AliasType, TypeDefinition } from "../../HathoraTypes";
-import { TypeName } from "../TypeName";
+import { TypeNameHeader } from "../TypeNameHeader";
 
 interface IAliasEditorProps {
     definition: AliasType;
@@ -31,7 +33,7 @@ export function AliasEditor({
         });
     };
 
-    const isArrayCheckboxToggled = () => {
+    const isArrayToggled = () => {
         updateDefinition({
             ...definition,
             typeDescription: {
@@ -41,7 +43,7 @@ export function AliasEditor({
         });
     };
 
-    const isOptionalCheckboxToggled = () => {
+    const isOptionalToggled = () => {
         updateDefinition({
             ...definition,
             typeDescription: {
@@ -52,16 +54,35 @@ export function AliasEditor({
     };
 
     return (
-        <Flex direction='row' key={definition.name} mb='2'>
-            <TypeName definition={definition} updateDefinition={updateDefinition} />
-            <Select placeholder='Select option' onChange={onSelect} value={definition.typeDescription.type}>
-                {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
-            </Select>
-            <Stack ml='2' spacing={[1, 5]} direction={["column", "row"]}>
-                <Checkbox colorScheme='green' isChecked={definition.typeDescription.isArray} onChange={isArrayCheckboxToggled}>Array</Checkbox>
-                <Checkbox colorScheme='green' isChecked={definition.typeDescription.isOptional} onChange={isOptionalCheckboxToggled}>Optional</Checkbox>
-            </Stack>
-            <CloseButton onClick={deleteType}/>
-        </Flex>
+        <VStack align='flex-start' direction='column' key={definition.name}>
+            <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+            <HStack direction='row'>
+                <Select size='sm' placeholder='Select option' onChange={onSelect} value={definition.typeDescription.type}>
+                    {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
+                </Select>
+                <Tooltip label="Convert to array" placement="top" openDelay={200}>
+                    <IconButton
+                        size='sm'
+                        variant={definition.typeDescription.isArray ? "solid" : "outline"}
+                        colorScheme='teal'
+                        aria-label='isArray'
+                        fontSize='18px'
+                        onClick={isArrayToggled}
+                        icon={<VscSymbolArray />}
+                    />
+                </Tooltip>
+                <Tooltip label="Convert to optional" placement="top" openDelay={200}>
+                    <IconButton
+                        size='sm'
+                        variant={definition.typeDescription.isOptional ? "solid" : "outline"}
+                        colorScheme='teal'
+                        aria-label='isOptional'
+                        fontSize='18px'
+                        onClick={isOptionalToggled}
+                        icon={<RiQuestionMark />}
+                    />
+                </Tooltip>
+            </HStack>
+        </VStack>
     );
 }
