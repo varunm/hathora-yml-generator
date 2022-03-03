@@ -4,6 +4,7 @@ import {
     EditablePreview,
     FormControl,
     FormErrorMessage,
+    HStack,
     Tag,
     TagCloseButton,
     TagLabel,
@@ -12,7 +13,8 @@ import {
 } from "@chakra-ui/react";
 import { filter, isEmpty, map } from "lodash";
 import React, { useState } from "react";
-import { EnumType, TypeDefinition } from "../../HathoraTypes";
+import { EnumType, EnumValueType, TypeDefinition } from "../../HathoraTypes";
+import { AddIconButton } from "../iconButtons/AddIconButton";
 import { TypeNameHeader } from "../TypeNameHeader";
 
 interface IEnumEditorProps {
@@ -24,6 +26,7 @@ interface IEnumEditorProps {
 export function EnumEditor({
     definition, updateDefinition, deleteType,
 }: IEnumEditorProps) {
+    const [addMode, setAddMode] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
     const onNewEnumAdded = (nextValue: string) => {
@@ -32,8 +35,9 @@ export function EnumEditor({
             return;
         }
 
-        if (isEmpty(nextValue)) {
-            setErrorMessage("Value must be not be empty");
+        const parsed = EnumValueType.safeParse(nextValue);
+        if (!parsed.success) {
+            setErrorMessage(parsed.error.issues[0].message);
             return;
         }
 
@@ -44,6 +48,7 @@ export function EnumEditor({
             enums: newEnums,
         });
         setErrorMessage("");
+        setAddMode(false);
     };
 
     const onEnumDeleted = (enumLabel: string) => () => {
@@ -53,20 +58,16 @@ export function EnumEditor({
         });
     };
 
+    const addEnum = () => {
+        setAddMode(true);
+    };
+
     return (
-        <VStack align='flex-start' direction='column'>
-            <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
-            <FormControl isInvalid={!isEmpty(errorMessage)}>
-                <Editable
-                    placeholder="Add new Enum value"
-                    submitOnBlur={false}
-                    onSubmit={onNewEnumAdded}
-                >
-                    <EditablePreview />
-                    <EditableInput />
-                </Editable>
-                <FormErrorMessage>{errorMessage}</FormErrorMessage>
-            </FormControl>
+        <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
+            <HStack>
+                <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+                <AddIconButton onClick={addEnum} />
+            </HStack>
             <Wrap>
                 {map(definition.enums.sort(), enumLabel =>
                     <Tag
@@ -81,6 +82,18 @@ export function EnumEditor({
                     </Tag>
                 )}
             </Wrap>
+            <FormControl hidden={!addMode} isInvalid={!isEmpty(errorMessage)}>
+                <Editable
+                    placeholder="Add new Enum value"
+                    submitOnBlur={true}
+                    onSubmit={onNewEnumAdded}
+                    startWithEditView={true}
+                >
+                    <EditablePreview />
+                    <EditableInput />
+                </Editable>
+                <FormErrorMessage>{errorMessage}</FormErrorMessage>
+            </FormControl>
         </VStack>
     );
 }

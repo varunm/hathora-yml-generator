@@ -19,10 +19,11 @@ interface IUnionEditorProps {
     definition: UnionType;
     updateDefinition: (definition: TypeDefinition) => void;
     deleteType: () => void;
+    availableTypes: string[];
 }
 
 export function UnionEditor({
-    definition, updateDefinition, deleteType,
+    definition, updateDefinition, deleteType, availableTypes,
 }: IUnionEditorProps) {
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -57,7 +58,7 @@ export function UnionEditor({
     unionLabels.sort();
 
     return (
-        <VStack align='flex-start'>
+        <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
             <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
             <FormControl isInvalid={!isEmpty(errorMessage)}>
                 <Editable

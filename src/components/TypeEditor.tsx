@@ -112,10 +112,14 @@ export function TypeEditor() {
         setTypes(updatedTypes);
     };
 
+    const getAvailableTypes = (definition: TypeDefinition) => {
+        return types.map(type => type.name).filter(typeName => typeName !== definition.name);
+    };
+
     const renderType = (definition: TypeDefinition, index: number) => {
         if (definition.type === "Alias") {
             return (
-                <AliasEditor key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
+                <AliasEditor availableTypes={getAvailableTypes(definition)} key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
             );
         }
         if (definition.type === "Enum") {
@@ -125,12 +129,12 @@ export function TypeEditor() {
         }
         if (definition.type === "Union") {
             return (
-                <UnionEditor key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
+                <UnionEditor availableTypes={getAvailableTypes(definition)} key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
             );
         }
         if (definition.type === "Object") {
             return (
-                <ObjectEditor key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
+                <ObjectEditor availableTypes={getAvailableTypes(definition)} key={definition.name} definition={definition} updateDefinition={updateDefinition(index)} deleteType={deleteType(index)}/>
             );
         }
     };

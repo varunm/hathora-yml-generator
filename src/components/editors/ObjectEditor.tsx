@@ -2,31 +2,53 @@ import {
     Editable,
     EditableInput,
     EditablePreview,
-    Flex,
-    IconButton,
-    Select,
-    Stack,
-    Tooltip,
+    FormControl,
+    FormErrorMessage,
+    HStack,
+    VStack,
 } from "@chakra-ui/react";
-import { map, set } from "lodash";
-import React from "react";
-import { RiQuestionMark } from "react-icons/ri";
-import { VscSymbolArray } from "react-icons/vsc";
+import { isEmpty, map, set } from "lodash";
+import React, { useState } from "react";
 import { PRIMITIVES } from "../../constants";
-import { ObjectType, TypeDefinition } from "../../HathoraTypes";
+import { ObjectType, TypeDefinition, TypeDescription } from "../../HathoraTypes";
+import { AddIconButton } from "../iconButtons/AddIconButton";
+import { ArrayIconButton } from "../iconButtons/ArrayIconButton";
+import { DeleteIconButton } from "../iconButtons/DeleteIconButton";
+import { OptionalIconButton } from "../iconButtons/OptionalIconButton";
 import { TypeNameHeader } from "../TypeNameHeader";
+import { TypeSelector } from "../TypeSelector";
 
 interface IObjectEditorProps {
     definition: ObjectType;
     updateDefinition: (definition: TypeDefinition) => void;
     deleteType: () => void;
+    availableTypes: string[];
 }
 
 export function ObjectEditor({
-    definition, updateDefinition, deleteType,
+    definition, updateDefinition, deleteType, availableTypes,
 }: IObjectEditorProps) {
+    const [errorMessages, setErrorMessages] = useState<{[key: string]: string}>({});
+
     const onFieldNameUpdated = (fieldName: string) => (nextValue: string) => {
         if (nextValue === fieldName) {
+            return;
+        }
+
+        if (Object.keys(definition.fields).includes(nextValue)) {
+            setErrorMessages({
+                ...errorMessages,
+                [fieldName]: "Field already exists with this name",
+            });
+            return;
+        }
+
+        const parsed = TypeDescription.shape.type.safeParse(nextValue);
+        if (!parsed.success) {
+            setErrorMessages({
+                ...errorMessages,
+                [fieldName]: parsed.error.issues[0].message,
+            });
             return;
         }
 
@@ -41,6 +63,11 @@ export function ObjectEditor({
         delete newDefinition.fields[fieldName];
 
         updateDefinition(newDefinition);
+        const newErrorMessages = {
+            ...errorMessages,
+        };
+        delete newErrorMessages[fieldName];
+        setErrorMessages(newErrorMessages);
     };
 
     const onSelect = (fieldName: string) => (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -76,15 +103,41 @@ export function ObjectEditor({
         updateDefinition(newDefinition);
     };
 
+    const deleteField = (fieldName: string) => () => {
+        const newFields: {[name: string]: TypeDescription} = {
+            ...definition.fields,
+        };
+        delete newFields[fieldName];
+        updateDefinition({
+            ...definition,
+            fields: newFields,
+        });
+    };
+
+    const addField = () => {
+        const newFields: {[name: string]: TypeDescription} = {
+            ...definition.fields,
+            "newProperty": {
+                type: "string",
+            },
+        };
+
+        updateDefinition({
+            ...definition,
+            fields: newFields,
+        });
+    };
+
     return (
-        <Flex direction='column'>
-            <Flex direction='row'>
+        <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
+            <HStack>
                 <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
-            </Flex>
-            <Stack ml='2' spacing={[1, 1]} direction={["row", "column"]}>
-                {map(definition.fields, (field, name) => {
-                    return (
-                        <Flex direction='row' key={name}>
+                <AddIconButton onClick={addField} />
+            </HStack>
+            <VStack paddingLeft='5'>
+                {map(definition.fields, (field, name) =>
+                    <FormControl key={name} isInvalid={!isEmpty(errorMessages[name])}>
+                        <HStack>
                             <Editable
                                 defaultValue={name}
                                 onSubmit={onFieldNameUpdated(name)}
@@ -92,36 +145,15 @@ export function ObjectEditor({
                                 <EditablePreview />
                                 <EditableInput />
                             </Editable>
-                            <Select size='sm' placeholder='Select option' onChange={onSelect(name)} value={field.type}>
-                                {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
-                            </Select>
-                            <Stack ml='2' spacing={[2, 2]} direction={["column", "row"]}>
-                                <Tooltip label="Convert to array" placement="top" openDelay={200}>
-                                    <IconButton
-                                        size='sm'
-                                        variant={field.isArray ? "solid" : "outline"}
-                                        colorScheme='teal'
-                                        aria-label='isArray'
-                                        fontSize='20px'
-                                        onClick={isArrayToggled(name)}
-                                        icon={<VscSymbolArray />}
-                                    />
-                                </Tooltip>
-                                <Tooltip label="Convert to optional" placement="top" openDelay={200}>
-                                    <IconButton
-                                        size='sm'
-                                        variant={field.isOptional ? "solid" : "outline"}
-                                        colorScheme='teal'
-                                        aria-label='isOptional'
-                                        fontSize='20px'
-                                        onClick={isOptionalToggled(name)}
-                                        icon={<RiQuestionMark />}
-                                    />
-                                </Tooltip>
-                            </Stack>
-                        </Flex>);
-                })}
-            </Stack>
-        </Flex>
+                            <TypeSelector onChange={onSelect(name)} selectedValue={field.type} availableTypes={availableTypes}/>
+                            <ArrayIconButton isSelected={field.isArray} onClick={isArrayToggled(name)} />
+                            <OptionalIconButton isSelected={field.isOptional} onClick={isOptionalToggled(name)} />
+                            <DeleteIconButton onClick={deleteField(name)} />
+                        </HStack>
+                        <FormErrorMessage>{errorMessages[name]}</FormErrorMessage>
+                    </FormControl>
+                )}
+            </VStack>
+        </VStack>
     );
 }

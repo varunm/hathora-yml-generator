@@ -1,26 +1,20 @@
-import {
-    HStack,
-    IconButton,
-    Select,
-    Tooltip,
-    VStack,
-} from "@chakra-ui/react";
-import { map } from "lodash";
+import { HStack, IconButton, Tooltip, VStack } from "@chakra-ui/react";
 import React from "react";
 import { RiQuestionMark } from "react-icons/ri";
 import { VscSymbolArray } from "react-icons/vsc";
-import { PRIMITIVES } from "../../constants";
 import { AliasType, TypeDefinition } from "../../HathoraTypes";
 import { TypeNameHeader } from "../TypeNameHeader";
+import { TypeSelector } from "../TypeSelector";
 
 interface IAliasEditorProps {
     definition: AliasType;
     updateDefinition: (definition: TypeDefinition) => void;
     deleteType: () => void;
+    availableTypes: string[];
 }
 
 export function AliasEditor({
-    definition, updateDefinition, deleteType,
+    definition, updateDefinition, deleteType, availableTypes,
 }: IAliasEditorProps) {
 
     const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -54,12 +48,10 @@ export function AliasEditor({
     };
 
     return (
-        <VStack align='flex-start' direction='column' key={definition.name}>
+        <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
             <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
             <HStack direction='row'>
-                <Select size='sm' placeholder='Select option' onChange={onSelect} value={definition.typeDescription.type}>
-                    {map(Object.values(PRIMITIVES), value => <option key={value} value={value}>{value}</option>)}
-                </Select>
+                <TypeSelector onChange={onSelect} selectedValue={definition.typeDescription.type} availableTypes={availableTypes}/>
                 <Tooltip label="Convert to array" placement="top" openDelay={200}>
                     <IconButton
                         size='sm'

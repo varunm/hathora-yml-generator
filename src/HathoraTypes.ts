@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const TypeDescription = z.object({
-    type: z.string(),
+    type: z.string().regex(/(^[a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "lowerCamelCase"),
     isArray: z.boolean().optional(),
     isOptional: z.boolean().optional(),
 });
 
 export const BaseType = z.object({
-    name: z.string(),
+    name: z.string().regex(/(^[A-Z][a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "UpperCamelCase"),
 });
 
 export const AliasType = BaseType.extend({
@@ -15,9 +15,13 @@ export const AliasType = BaseType.extend({
     typeDescription: TypeDescription,
 });
 
+export const EnumValueType = z.string()
+    .nonempty("Value must not be empty")
+    .regex(/^[A-Z0-9]+(?:_[A-Z0-9]+)*$/, "CAPITAL_UNDERSCORE_CASE_ONLY_1 please");
+
 export const EnumType = BaseType.extend({
     type: z.literal("Enum"),
-    enums: z.array(z.string()),
+    enums: z.array(EnumValueType),
 });
 
 export const UnionType = BaseType.extend({
