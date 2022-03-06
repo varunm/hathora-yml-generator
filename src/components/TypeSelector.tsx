@@ -5,13 +5,14 @@ import { PRIMITIVES } from "../constants";
 
 interface ITypeSelectorProps {
     onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-    selectedValue: string;
+    selectedValue?: string;
     availableTypes: string[];
 }
 
 export function TypeSelector({
     onChange, selectedValue, availableTypes,
 }: ITypeSelectorProps) {
+    console.log(selectedValue);
     const primitives: string[] = Object.values(PRIMITIVES).map((value) => (value as string ));
     const allAvailableTypes: string[] = primitives.concat(availableTypes ?? []);
     return (
