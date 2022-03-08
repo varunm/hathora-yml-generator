@@ -35,9 +35,23 @@ export const ObjectType = BaseType.extend({
 });
 
 export const TypeDefinition = z.discriminatedUnion("type", [AliasType, EnumType, UnionType, ObjectType]);
+
+export const MethodDefinition = z.object({
+    name: z.string().regex(/(^[a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "lowerCamelCase"),
+    fields: z.record(TypeDescription),
+});
+
 export type TypeDescription = z.infer<typeof TypeDescription>;
 export type AliasType = z.infer<typeof AliasType>;
 export type EnumType = z.infer<typeof EnumType>;
 export type UnionType = z.infer<typeof UnionType>;
 export type ObjectType = z.infer<typeof ObjectType>;
 export type TypeDefinition = z.infer<typeof TypeDefinition>;
+export type MethodDefinition = z.infer<typeof MethodDefinition>;
+
+export interface HathoraYmlDefinition {
+    types: {[name: string]: TypeDefinition};
+    methods: {[name: string]: MethodDefinition};
+    userState: string;
+    error: string;
+}

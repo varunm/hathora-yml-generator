@@ -1,22 +1,22 @@
 import { HStack, VStack } from "@chakra-ui/react";
 import React from "react";
-import { ObjectType, TypeDefinition, TypeDescription } from "../../HathoraTypes";
+import { MethodDefinition, TypeDescription } from "../../HathoraTypes";
 import { AddIconButton } from "../iconButtons/AddIconButton";
-import { TypeNameHeader } from "../TypeNameHeader";
+import { MethodNameHeader } from "../MethodNameHeader";
 import { FieldSetEditor } from "./FieldSetEditor";
 
-interface IObjectEditorProps {
-    definition: ObjectType;
-    updateDefinition: (definition: TypeDefinition) => void;
-    deleteType: () => void;
+interface IMethodEditorProps {
+    definition: MethodDefinition;
+    updateDefinition: (definition: MethodDefinition) => void;
+    deleteMethod: () => void;
     availableTypes: string[];
 }
 
-export function ObjectEditor({
-    definition, updateDefinition, deleteType, availableTypes,
-}: IObjectEditorProps) {
+export function MethodEditor({
+    definition, updateDefinition, deleteMethod, availableTypes,
+}: IMethodEditorProps) {
     const updateFields = (fields: {[name: string]: TypeDescription}) => {
-        const newDefinition: ObjectType = {
+        const newDefinition: MethodDefinition = {
             ...definition,
             fields: {
                 ...fields,
@@ -43,7 +43,7 @@ export function ObjectEditor({
     return (
         <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
             <HStack>
-                <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+                <MethodNameHeader definition={definition} updateDefinition={updateDefinition} deleteMethod={deleteMethod} />
                 <AddIconButton onClick={addField} />
             </HStack>
             <FieldSetEditor fields={definition.fields} updateFields={updateFields} availableTypes={availableTypes} />

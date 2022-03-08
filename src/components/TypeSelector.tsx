@@ -12,7 +12,6 @@ interface ITypeSelectorProps {
 export function TypeSelector({
     onChange, selectedValue, availableTypes,
 }: ITypeSelectorProps) {
-    console.log(selectedValue);
     const primitives: string[] = Object.values(PRIMITIVES).map((value) => (value as string ));
     const allAvailableTypes: string[] = primitives.concat(availableTypes ?? []);
     return (
