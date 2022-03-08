@@ -7,7 +7,13 @@ import { Header } from "./components/Header";
 import { YMLEditor } from "./components/YMLEditor";
 import { YMLViewer } from "./components/YMLViewer";
 import { PRIMITIVES } from "./constants";
-import { HathoraYmlDefinition, MethodDefinition, TypeDefinition, TypeDescription } from "./HathoraTypes";
+import {
+    Auth,
+    HathoraYmlDefinition,
+    MethodDefinition,
+    TypeDefinition,
+    TypeDescription,
+} from "./HathoraTypes";
 
 const toStringTypeDescription = (typeDescription: TypeDescription) => {
     return typeDescription.type + (typeDescription.isArray ? "[]" : "") + (typeDescription.isOptional ? "?" : "");
@@ -84,12 +90,16 @@ function App() {
 
     const [userState, setUserState] = useState<string>("string");
     const [error, setError] = useState<string>("string");
+    const [tick, setTick] = useState<number | undefined>(undefined);
+    const [auth, setAuth] = useState<Auth>({});
 
     const config: HathoraYmlDefinition = {
         types: keyBy(types, "name"),
         methods: keyBy(methods, "name"),
         userState: userState,
         error: error,
+        tick: tick,
+        auth: auth,
     };
 
     const stringifiedConfig = {
@@ -112,6 +122,10 @@ function App() {
                         setUserState={setUserState}
                         errorType={error}
                         setErrorType={setError}
+                        tick={tick}
+                        setTick={setTick}
+                        auth={auth}
+                        setAuth={setAuth}
                     />
                     <YMLViewer content={yaml.dump(stringifiedConfig)}/>
                 </Grid>

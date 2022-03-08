@@ -19,7 +19,7 @@ export function ErrorSection({
 
     return (
         <HStack width='100%'>
-            <Heading size='md'>Error Type</Heading>
+            <Heading size='md'>Error</Heading>
             <FormControl isInvalid={isEmpty(errorType)}>
                 <HStack>
                     <TypeSelector onChange={onSelect} selectedValue={errorType} availableTypes={availableTypes}/>

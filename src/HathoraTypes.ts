@@ -1,3 +1,4 @@
+import { isEmpty } from "lodash";
 import { z } from "zod";
 
 export const TypeDescription = z.object({
@@ -41,6 +42,27 @@ export const MethodDefinition = z.object({
     fields: z.record(TypeDescription),
 });
 
+export const AuthAnonymous = z
+    .object({
+        separator: z.string(),
+    }).strict();
+
+export const AuthGoogle = z
+    .object({
+        clientId: z.string(),
+    }).strict();
+
+export const Auth = z
+    .object({
+        anonymous: AuthAnonymous,
+        google: AuthGoogle,
+    })
+    .partial()
+    .refine(
+        data => !isEmpty(data.anonymous) || !isEmpty(data.google),
+        "Some type of auth must be defined"
+    );
+
 export type TypeDescription = z.infer<typeof TypeDescription>;
 export type AliasType = z.infer<typeof AliasType>;
 export type EnumType = z.infer<typeof EnumType>;
@@ -48,10 +70,17 @@ export type UnionType = z.infer<typeof UnionType>;
 export type ObjectType = z.infer<typeof ObjectType>;
 export type TypeDefinition = z.infer<typeof TypeDefinition>;
 export type MethodDefinition = z.infer<typeof MethodDefinition>;
+export type AuthAnonymous = z.infer<typeof AuthAnonymous>;
+export type AuthGoogle = z.infer<typeof AuthGoogle>;
+export type Auth = z.infer<typeof Auth>;
 
-export interface HathoraYmlDefinition {
-    types: {[name: string]: TypeDefinition};
-    methods: {[name: string]: MethodDefinition};
-    userState: string;
-    error: string;
-}
+export const HathoraYmlDefinition = z.object({
+    types: z.record(TypeDefinition),
+    methods: z.record(MethodDefinition),
+    userState: z.string(),
+    error: z.string(),
+    tick: z.optional(z.number().int().gte(50)),
+    auth: Auth,
+}).strict();
+
+export type HathoraYmlDefinition = z.infer<typeof HathoraYmlDefinition>;
