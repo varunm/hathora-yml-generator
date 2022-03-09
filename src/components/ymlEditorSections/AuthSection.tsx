@@ -90,7 +90,7 @@ export function AuthSection({ auth, setAuth }: IAuthSectionProps) {
                             <Checkbox onChange={onAnonymousToggle}>Enabled</Checkbox>
                         </HStack>
 
-                        <FormControl id="separator" isDisabled={isEmpty(auth.anonymous)} isInvalid={!isEmpty(auth.anonymous) && isEmpty(auth.anonymous?.separator)}>
+                        <FormControl id="separator" isDisabled={isEmpty(auth.anonymous)}>
                             <FormLabel fontWeight='semibold'>separator</FormLabel>
                             <Editable
                                 defaultValue={auth.anonymous?.separator}
@@ -101,7 +101,6 @@ export function AuthSection({ auth, setAuth }: IAuthSectionProps) {
                                 <EditablePreview />
                                 <EditableInput />
                             </Editable>
-                            <FormErrorMessage>Separator required</FormErrorMessage>
                         </FormControl>
                     </VStack>
                     <VStack align='flex-start' backgroundColor='gray.100' width='100%'>

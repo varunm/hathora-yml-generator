@@ -44,7 +44,7 @@ export const MethodDefinition = z.object({
 
 export const AuthAnonymous = z
     .object({
-        separator: z.string(),
+        separator: z.string().optional(),
     }).strict();
 
 export const AuthGoogle = z
