@@ -46,7 +46,7 @@ export function ObjectEditor({
                 <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
                 <AddIconButton onClick={addField} />
             </HStack>
-            <FieldSetEditor fields={definition.fields} updateFields={updateFields} availableTypes={availableTypes} />
+            <FieldSetEditor parentPath={["types", definition.name]} fields={definition.fields} updateFields={updateFields} availableTypes={availableTypes} />
         </VStack>
     );
 }

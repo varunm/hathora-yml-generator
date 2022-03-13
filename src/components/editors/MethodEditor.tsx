@@ -46,7 +46,7 @@ export function MethodEditor({
                 <MethodNameHeader definition={definition} updateDefinition={updateDefinition} deleteMethod={deleteMethod} />
                 <AddIconButton onClick={addField} />
             </HStack>
-            <FieldSetEditor fields={definition.fields} updateFields={updateFields} availableTypes={availableTypes} />
+            <FieldSetEditor parentPath={["methods", definition.name]} fields={definition.fields} updateFields={updateFields} availableTypes={availableTypes} />
         </VStack>
     );
 }

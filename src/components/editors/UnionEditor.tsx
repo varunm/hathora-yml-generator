@@ -8,9 +8,17 @@ import {
     VStack,
     Wrap,
 } from "@chakra-ui/react";
-import { filter, isEmpty, map } from "lodash";
-import React, { useState } from "react";
+import {
+    difference,
+    filter,
+    isEmpty,
+    map,
+    uniq,
+} from "lodash";
+import React, { useContext, useState } from "react";
+import { ZodIssue } from "zod";
 import { UnionType, TypeDefinition } from "../../HathoraTypes";
+import { IssuesContext } from "../../util";
 import { AddIconButton } from "../iconButtons/AddIconButton";
 import { CheckIconButton } from "../iconButtons/CheckIconButton";
 import { TypeNameHeader } from "../TypeNameHeader";
@@ -26,22 +34,19 @@ interface IUnionEditorProps {
 export function UnionEditor({
     definition, updateDefinition, deleteType, availableTypes,
 }: IUnionEditorProps) {
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => difference(["types", definition.name, "unions"], issue.path).length === 0
+    );
     const [addMode, setAddMode] = useState(false);
     const [newUnion, setNewUnion] = useState<string>("");
-    const [errorMessage, setErrorMessage] = useState("");
 
     const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setNewUnion(event.target.value);
     };
 
     const onNewUnionAdded = () => {
-        if (definition.unions.includes(newUnion)) {
-            setErrorMessage("Value must be unique");
-            return;
-        }
-
         if (isEmpty(newUnion)) {
-            setErrorMessage("Value must be not be empty");
+            setAddMode(false);
             return;
         }
 
@@ -49,9 +54,8 @@ export function UnionEditor({
         newUnions.push(newUnion);
         updateDefinition({
             ...definition,
-            unions: newUnions,
+            unions: uniq(newUnions),
         });
-        setErrorMessage("");
         setAddMode(false);
         setNewUnion("");
     };
@@ -80,27 +84,29 @@ export function UnionEditor({
                 <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
                 <AddIconButton onClick={addUnion} />
             </HStack>
-            <FormControl hidden={!addMode} isInvalid={!isEmpty(errorMessage)}>
+            <FormControl hidden={!addMode}>
                 <HStack>
                     <TypeSelector onChange={onSelect} selectedValue={newUnion} availableTypes={filteredTypes()}/>
                     <CheckIconButton onClick={onNewUnionAdded}/>
                 </HStack>
-                <FormErrorMessage>{errorMessage}</FormErrorMessage>
             </FormControl>
-            <Wrap>
-                {map(unionLabels, unionLabel =>
-                    <Tag
-                        size='md'
-                        key={unionLabel}
-                        borderRadius='full'
-                        variant='solid'
-                        colorScheme='green'
-                    >
-                        <TagLabel>{unionLabel}</TagLabel>
-                        <TagCloseButton onClick={onUnionDeleted(unionLabel)} />
-                    </Tag>
-                )}
-            </Wrap>
+            <FormControl isInvalid={!isEmpty(issues)}>
+                <Wrap>
+                    {map(unionLabels, unionLabel =>
+                        <Tag
+                            size='md'
+                            key={unionLabel}
+                            borderRadius='full'
+                            variant='solid'
+                            colorScheme='green'
+                        >
+                            <TagLabel>{unionLabel}</TagLabel>
+                            <TagCloseButton onClick={onUnionDeleted(unionLabel)} />
+                        </Tag>
+                    )}
+                </Wrap>
+                <FormErrorMessage>{isEmpty(issues) ? "" : issues[0].message}</FormErrorMessage>
+            </FormControl>
         </VStack>
     );
 }

@@ -9,9 +9,11 @@ import {
     HStack,
     IconButton,
 } from "@chakra-ui/react";
-import { isEmpty } from "lodash";
-import React, { useState } from "react";
-import { BaseType, TypeDefinition } from "../HathoraTypes";
+import { isEmpty, isEqual } from "lodash";
+import React, { useContext } from "react";
+import { ZodIssue } from "zod";
+import { TypeDefinition } from "../HathoraTypes";
+import { IssuesContext } from "../util";
 
 interface ITypeNameHeaderProps {
     definition: TypeDefinition;
@@ -22,16 +24,12 @@ interface ITypeNameHeaderProps {
 export function TypeNameHeader({
     definition, updateDefinition, deleteType,
 }: ITypeNameHeaderProps) {
-    const [errorMessage, setErrorMessage] = useState("");
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => isEqual(issue.path, ["types", definition.name, "name"])
+    );
 
     const onSubmit = (nextValue: string) => {
         if (definition.name === nextValue) {
-            return;
-        }
-
-        const parsed = BaseType.shape.name.safeParse(nextValue);
-        if (!parsed.success) {
-            setErrorMessage(parsed.error.issues[0].message);
             return;
         }
 
@@ -42,7 +40,7 @@ export function TypeNameHeader({
     };
 
     return (
-        <FormControl isInvalid={!isEmpty(errorMessage)}>
+        <FormControl isInvalid={!isEmpty(issues)}>
             <HStack direction='row'>
                 <Editable
                     defaultValue={definition.name}
@@ -61,7 +59,7 @@ export function TypeNameHeader({
                     icon={<DeleteIcon />}
                 />
             </HStack>
-            <FormErrorMessage>{errorMessage}</FormErrorMessage>
+            <FormErrorMessage>{isEmpty(issues) ? "" : issues[0].message}</FormErrorMessage>
         </FormControl>
     );
 }

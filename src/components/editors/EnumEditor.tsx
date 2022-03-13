@@ -11,9 +11,17 @@ import {
     VStack,
     Wrap,
 } from "@chakra-ui/react";
-import { filter, isEmpty, map } from "lodash";
-import React, { useState } from "react";
-import { EnumType, EnumValueType, TypeDefinition } from "../../HathoraTypes";
+import {
+    difference,
+    filter,
+    isEmpty,
+    map,
+    uniq,
+} from "lodash";
+import React, { useContext, useState } from "react";
+import { ZodIssue } from "zod";
+import { EnumType, TypeDefinition } from "../../HathoraTypes";
+import { IssuesContext } from "../../util";
 import { AddIconButton } from "../iconButtons/AddIconButton";
 import { TypeNameHeader } from "../TypeNameHeader";
 
@@ -26,28 +34,22 @@ interface IEnumEditorProps {
 export function EnumEditor({
     definition, updateDefinition, deleteType,
 }: IEnumEditorProps) {
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => difference(["types", definition.name, "enums"], issue.path).length === 0
+    );
     const [addMode, setAddMode] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
 
     const onNewEnumAdded = (nextValue: string) => {
-        if (definition.enums.includes(nextValue)) {
-            setErrorMessage("Value must be unique");
+        if (isEmpty(nextValue)) {
+            setAddMode(false);
             return;
         }
-
-        const parsed = EnumValueType.safeParse(nextValue);
-        if (!parsed.success) {
-            setErrorMessage(parsed.error.issues[0].message);
-            return;
-        }
-
         const newEnums = [...definition.enums];
         newEnums.push(nextValue);
         updateDefinition({
             ...definition,
-            enums: newEnums,
+            enums: uniq(newEnums),
         });
-        setErrorMessage("");
         setAddMode(false);
     };
 
@@ -68,31 +70,33 @@ export function EnumEditor({
                 <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
                 <AddIconButton onClick={addEnum} />
             </HStack>
-            <Wrap>
-                {map(definition.enums.sort(), enumLabel =>
-                    <Tag
-                        size='md'
-                        key={enumLabel}
-                        borderRadius='full'
-                        variant='solid'
-                        colorScheme='green'
-                    >
-                        <TagLabel>{enumLabel}</TagLabel>
-                        <TagCloseButton onClick={onEnumDeleted(enumLabel)} />
-                    </Tag>
-                )}
-            </Wrap>
-            <FormControl hidden={!addMode} isInvalid={!isEmpty(errorMessage)}>
+            <FormControl isInvalid={!isEmpty(issues)}>
+                <Wrap>
+                    {map(definition.enums.sort(), enumLabel =>
+                        <Tag
+                            size='md'
+                            key={enumLabel}
+                            borderRadius='full'
+                            variant='solid'
+                            colorScheme='green'
+                        >
+                            <TagLabel>{enumLabel}</TagLabel>
+                            <TagCloseButton onClick={onEnumDeleted(enumLabel)} />
+                        </Tag>
+                    )}
+                </Wrap>
+                <FormErrorMessage>{isEmpty(issues) ? "" : issues[0].message}</FormErrorMessage>
+            </FormControl>
+            <FormControl hidden={!addMode}>
                 <Editable
                     placeholder="Add new Enum value"
-                    submitOnBlur={true}
+                    submitOnBlur={false}
                     onSubmit={onNewEnumAdded}
                     startWithEditView={true}
                 >
                     <EditablePreview />
                     <EditableInput />
                 </Editable>
-                <FormErrorMessage>{errorMessage}</FormErrorMessage>
             </FormControl>
         </VStack>
     );

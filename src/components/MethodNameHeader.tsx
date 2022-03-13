@@ -9,9 +9,11 @@ import {
     HStack,
     IconButton,
 } from "@chakra-ui/react";
-import { isEmpty } from "lodash";
-import React, { useState } from "react";
+import { isEmpty, isEqual } from "lodash";
+import React, { useContext } from "react";
+import { ZodIssue } from "zod";
 import { MethodDefinition } from "../HathoraTypes";
+import { IssuesContext } from "../util";
 
 interface IMethodNameHeaderProps {
     definition: MethodDefinition;
@@ -22,16 +24,12 @@ interface IMethodNameHeaderProps {
 export function MethodNameHeader({
     definition, updateDefinition, deleteMethod,
 }: IMethodNameHeaderProps) {
-    const [errorMessage, setErrorMessage] = useState("");
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => isEqual(issue.path, ["methods", definition.name, "name"])
+    );
 
     const onSubmit = (nextValue: string) => {
-        if (definition.name === nextValue) {
-            return;
-        }
-
-        const parsed = MethodDefinition.shape.name.safeParse(nextValue);
-        if (!parsed.success) {
-            setErrorMessage(parsed.error.issues[0].message);
+        if (definition.name === nextValue || isEmpty(nextValue)) {
             return;
         }
 
@@ -42,7 +40,7 @@ export function MethodNameHeader({
     };
 
     return (
-        <FormControl isInvalid={!isEmpty(errorMessage)}>
+        <FormControl isInvalid={!isEmpty(issues)}>
             <HStack direction='row'>
                 <Editable
                     defaultValue={definition.name}
@@ -61,7 +59,7 @@ export function MethodNameHeader({
                     icon={<DeleteIcon />}
                 />
             </HStack>
-            <FormErrorMessage>{errorMessage}</FormErrorMessage>
+            <FormErrorMessage>{isEmpty(issues) ? "" : issues[0].message}</FormErrorMessage>
         </FormControl>
     );
 }

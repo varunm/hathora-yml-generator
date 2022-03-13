@@ -7,9 +7,11 @@ import {
     HStack,
     VStack,
 } from "@chakra-ui/react";
-import { isEmpty, map, set } from "lodash";
-import React, { useState } from "react";
+import { difference, isEmpty, map, set } from "lodash";
+import React, { useContext, useState } from "react";
+import { ZodIssue } from "zod";
 import { TypeDescription } from "../../HathoraTypes";
+import { IssuesContext } from "../../util";
 import { ArrayIconButton } from "../iconButtons/ArrayIconButton";
 import { DeleteIconButton } from "../iconButtons/DeleteIconButton";
 import { OptionalIconButton } from "../iconButtons/OptionalIconButton";
@@ -19,15 +21,24 @@ interface IFieldSetEditorProps {
     fields: {[name: string]: TypeDescription};
     updateFields: (fields: {[name: string]: TypeDescription}) => void;
     availableTypes: string[];
+    parentPath: (string | number)[];
 }
 
 export function FieldSetEditor({
-    fields, updateFields, availableTypes,
+    fields, updateFields, availableTypes, parentPath,
 }: IFieldSetEditorProps) {
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => difference(parentPath.concat(["fields"]), issue.path).length === 0
+    );
     const [errorMessages, setErrorMessages] = useState<{[key: string]: string}>({});
 
     const onFieldNameUpdated = (fieldName: string) => (nextValue: string) => {
         if (nextValue === fieldName) {
+            const newErrorMessages = {
+                ...errorMessages,
+            };
+            delete newErrorMessages[fieldName];
+            setErrorMessages(newErrorMessages);
             return;
         }
 
@@ -35,15 +46,6 @@ export function FieldSetEditor({
             setErrorMessages({
                 ...errorMessages,
                 [fieldName]: "Field already exists with this name",
-            });
-            return;
-        }
-
-        const parsed = TypeDescription.shape.type.safeParse(nextValue);
-        if (!parsed.success) {
-            setErrorMessages({
-                ...errorMessages,
-                [fieldName]: parsed.error.issues[0].message,
             });
             return;
         }
@@ -94,24 +96,33 @@ export function FieldSetEditor({
         updateFields(newFields);
     };
 
+    const issuesForField = (fieldName: string): ZodIssue[] => {
+        return issues.filter(
+            issue => difference(parentPath.concat(["fields", fieldName]), issue.path).length === 0
+        );
+    };
+
     return (
         <VStack paddingLeft='5'>
             {map(fields, (field, name) =>
-                <FormControl key={name} isInvalid={!isEmpty(errorMessages[name])}>
+                <FormControl key={name} isInvalid={!isEmpty(issuesForField(name))}>
                     <HStack>
-                        <Editable
-                            defaultValue={name}
-                            onSubmit={onFieldNameUpdated(name)}
-                        >
-                            <EditablePreview />
-                            <EditableInput />
-                        </Editable>
+                        <FormControl isInvalid={!isEmpty(errorMessages[name])}>
+                            <Editable
+                                defaultValue={name}
+                                onSubmit={onFieldNameUpdated(name)}
+                            >
+                                <EditablePreview />
+                                <EditableInput />
+                            </Editable>
+                            <FormErrorMessage>{errorMessages[name]}</FormErrorMessage>
+                        </FormControl>
                         <TypeSelector onChange={onSelect(name)} selectedValue={field.type} availableTypes={availableTypes}/>
                         <ArrayIconButton isSelected={field.isArray} onClick={isArrayToggled(name)} />
                         <OptionalIconButton isSelected={field.isOptional} onClick={isOptionalToggled(name)} />
                         <DeleteIconButton onClick={deleteField(name)} />
                     </HStack>
-                    <FormErrorMessage>{errorMessages[name]}</FormErrorMessage>
+                    <FormErrorMessage>{isEmpty(issuesForField(name)) ? "" : issuesForField(name)[0].message}</FormErrorMessage>
                 </FormControl>
             )}
         </VStack>

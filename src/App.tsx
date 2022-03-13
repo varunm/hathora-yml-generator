@@ -1,111 +1,87 @@
 import { ChakraProvider, Container, Grid } from "@chakra-ui/react";
-import yaml from "js-yaml";
-import { keyBy, mapValues } from "lodash";
+import { cloneDeep, keyBy } from "lodash";
 import React, { useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { YMLEditor } from "./components/YMLEditor";
 import { YMLViewer } from "./components/YMLViewer";
-import { PRIMITIVES } from "./constants";
-import {
-    Auth,
-    HathoraYmlDefinition,
-    MethodDefinition,
-    TypeDefinition,
-    TypeDescription,
-} from "./HathoraTypes";
+import { Auth, HathoraYmlDefinition, MethodDefinition, TypeDefinition } from "./HathoraTypes";
 
-const toStringTypeDescription = (typeDescription: TypeDescription) => {
-    return typeDescription.type + (typeDescription.isArray ? "[]" : "") + (typeDescription.isOptional ? "?" : "");
-};
+const TYPES: TypeDefinition[] = [
+    {
+        name: "MyAlias",
+        type: "Alias",
+        typeDescription: {
+            isArray: true,
+            type: "asd",
+        },
+    },
+    {
+        name: "UserState",
+        type: "Object",
+        fields: {
+            "id": {
+                type: "stringg", isArray: true, isOptional: true,
+            },
+        },
+    },
+    {
+        name: "MyEnum",
+        type: "Enum",
+        enums: ["VAL_1", "VAL_2"],
+    },
+    {
+        name: "MyUnion",
+        type: "Union",
+        unions: ["UserState", "MyEnumm", "testtest"],
+    },
+];
 
-const toString = (definition: TypeDefinition) => {
-    if (definition.type === "Alias") {
-        return toStringTypeDescription(definition.typeDescription);
-    }
-    if (definition.type === "Enum") {
-        return definition.enums;
-    }
-    if (definition.type === "Union") {
-        return definition.unions;
-    }
-    if (definition.type === "Object") {
-        return mapValues(definition.fields, value => toStringTypeDescription(value));
-    }
-};
+const METHODS: MethodDefinition[] = [
+    {
+        name: "createTest",
+        fields: {
+            "first": {
+                type: "string", isArray: false, isOptional: false,
+            },
+        },
+    },
+    {
+        name: "DisableTest",
+        fields: {
+            "state": {
+                type: "userStatee", isArray: false, isOptional: false,
+            },
+        },
+    },
+];
 
-const toStringMethod = (method: MethodDefinition) => {
-    return mapValues(method.fields, parameter => toStringTypeDescription(parameter));
-};
+const USER_STATE = "";
+const ERROR = "stringg";
+const TICK: number | undefined = 30;
+const AUTH: Auth = {};
 
 function App() {
-    const [types, setTypes] = useState<TypeDefinition[]>([
-        {
-            name: "MyAlias",
-            type: "Alias",
-            typeDescription: {
-                isArray: true,
-                type: PRIMITIVES.STRING,
-            },
-        },
-        {
-            name: "UserState",
-            type: "Object",
-            fields: {
-                "id": {
-                    type: "string", isArray: true, isOptional: true,
-                },
-            },
-        },
-        {
-            name: "MyEnum",
-            type: "Enum",
-            enums: ["VAL_1", "VAL_2"],
-        },
-        {
-            name: "MyUnion",
-            type: "Union",
-            unions: ["UserState", "MyEnum"],
-        },
-    ]);
 
-    const [methods, setMethods] = useState<MethodDefinition[]>([
-        {
-            name: "createTest",
-            fields: {
-                "first": {
-                    type: "string", isArray: false, isOptional: false,
-                },
-            },
-        },
-        {
-            name: "disableTest",
-            fields: {
-                "state": {
-                    type: "UserState", isArray: false, isOptional: false,
-                },
-            },
-        },
-    ]);
+    const [config, setConfig] = useState<HathoraYmlDefinition>({
+        types: keyBy(TYPES, "name"),
+        methods: keyBy(METHODS, "name"),
+        userState: USER_STATE,
+        error: ERROR,
+        tick: TICK,
+        auth: AUTH,
+    });
 
-    const [userState, setUserState] = useState<string>("string");
-    const [error, setError] = useState<string>("string");
-    const [tick, setTick] = useState<number | undefined>(undefined);
-    const [auth, setAuth] = useState<Auth>({});
+    const [cleanConfig, setCleanConfig] = useState<HathoraYmlDefinition>({
+        ...cloneDeep(config),
+    });
 
-    const config: HathoraYmlDefinition = {
-        types: keyBy(types, "name"),
-        methods: keyBy(methods, "name"),
-        userState: userState,
-        error: error,
-        tick: tick,
-        auth: auth,
-    };
-
-    const stringifiedConfig = {
-        ...config,
-        types: mapValues(config.types, type => toString(type)),
-        methods: mapValues(config.methods, method => toStringMethod(method)),
+    const updateConfigs = (newConfig: HathoraYmlDefinition) => {
+        const parsed = HathoraYmlDefinition.safeParse(newConfig);
+        if (parsed.success) {
+            setCleanConfig(newConfig);
+        }
+        setConfig(newConfig);
     };
 
     return (
@@ -114,20 +90,10 @@ function App() {
                 <Header />
                 <Grid templateColumns='repeat(2, 1fr)' gap='20'>
                     <YMLEditor
-                        types={types}
-                        setTypes={setTypes}
-                        methods={methods}
-                        setMethods={setMethods}
-                        userState={userState}
-                        setUserState={setUserState}
-                        errorType={error}
-                        setErrorType={setError}
-                        tick={tick}
-                        setTick={setTick}
-                        auth={auth}
-                        setAuth={setAuth}
+                        config={config}
+                        setConfig={updateConfigs}
                     />
-                    <YMLViewer content={yaml.dump(stringifiedConfig)}/>
+                    <YMLViewer config={cleanConfig} />
                 </Grid>
             </Container>
         </ChakraProvider>

@@ -1,14 +1,21 @@
-import { isEmpty } from "lodash";
+import {
+    forEach,
+    isEmpty,
+    isEqual,
+    map,
+    uniq,
+} from "lodash";
 import { z } from "zod";
+import { PRIMITIVES } from "./constants";
 
 export const TypeDescription = z.object({
-    type: z.string().regex(/(^[a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "lowerCamelCase"),
+    type: z.string().nonempty(),
     isArray: z.boolean().optional(),
     isOptional: z.boolean().optional(),
 });
 
 export const BaseType = z.object({
-    name: z.string().regex(/(^[A-Z][a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "UpperCamelCase"),
+    name: z.string().nonempty().regex(/(^[A-Z][a-z]+)(([A-Z][a-z]+))*([A-Z])?/, "UpperCamelCase"),
 });
 
 export const AliasType = BaseType.extend({
@@ -16,13 +23,11 @@ export const AliasType = BaseType.extend({
     typeDescription: TypeDescription,
 });
 
-export const EnumValueType = z.string()
-    .nonempty("Value must not be empty")
-    .regex(/^[A-Z0-9]+(?:_[A-Z0-9]+)*$/, "CAPITAL_UNDERSCORE_CASE_ONLY_1 please");
-
 export const EnumType = BaseType.extend({
     type: z.literal("Enum"),
-    enums: z.array(EnumValueType),
+    enums: z.array(z.string()
+        .nonempty("Value must not be empty")
+        .regex(/^[A-Z0-9]+(?:_[A-Z0-9]+)*$/, "CAPITAL_UNDERSCORE_CASE_ONLY_1 please")),
 });
 
 export const UnionType = BaseType.extend({
@@ -49,7 +54,7 @@ export const AuthAnonymous = z
 
 export const AuthGoogle = z
     .object({
-        clientId: z.string(),
+        clientId: z.string().nonempty(),
     }).strict();
 
 export const Auth = z
@@ -60,7 +65,7 @@ export const Auth = z
     .partial()
     .refine(
         data => !isEmpty(data.anonymous) || !isEmpty(data.google),
-        "Some type of auth must be defined"
+        "At least one type of auth must be enabled"
     );
 
 export type TypeDescription = z.infer<typeof TypeDescription>;
@@ -81,6 +86,100 @@ export const HathoraYmlDefinition = z.object({
     error: z.string(),
     tick: z.optional(z.number().int().gte(50)),
     auth: Auth,
-}).strict();
+}).strict().superRefine((config, ctx) => {
+    const availableTypes: string[] = getAvailableTypesFromConfig(config);
+
+    // Check types are valid in method fields
+    forEach(config.methods, method => {
+        forEach(method.fields, (field, fieldName) => {
+            if (!availableTypes.includes(field.type)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Type does not exist",
+                    path: ["methods", method.name, "fields", fieldName, "type"],
+                });
+            }
+        });
+    });
+
+    // Check types are valid in type fields
+    forEach(config.types, type => {
+        const filteredTypes = availableTypes.filter(typeName => typeName !== type.name);
+        if ((type.type === "Alias") && (!filteredTypes.includes(type.typeDescription.type))){
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Type does not exist",
+                path: ["types", type.name, "typeDescription", "type"],
+            });
+        }
+
+        if (type.type === "Union") {
+            const invalidTypes = type.unions.filter(union => !filteredTypes.includes(union));
+            if (!isEmpty(invalidTypes)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `The following types do not exist: ${invalidTypes}`,
+                    path: ["types", type.name, "unions"],
+                });
+            }
+
+            // Check for duplicates
+            if (!isEqual(uniq(type.unions), type.unions)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Duplicate types are not allowed",
+                    path: ["types", type.name, "unions"],
+                });
+            }
+        }
+
+        if (type.type === "Object") {
+            forEach(type.fields, (field, fieldName) => {
+                if (!availableTypes.includes(field.type)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Type does not exist",
+                        path: ["types", type.name, "fields", fieldName, "type"],
+                    });
+                }
+            });
+        }
+
+        if (type.type === "Enum") {
+            // Check for duplicates
+            if (!isEqual(uniq(type.enums), type.enums)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Duplicate values are not allowed",
+                    path: ["types", type.name, "enums"],
+                });
+            }
+        }
+    });
+
+    // Check types are valid in user state
+    if (!availableTypes.includes(config.userState)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Type does not exist",
+            path: ["userState"],
+        });
+    }
+
+    // Check types are valid in error
+    if (!availableTypes.includes(config.error)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Type does not exist",
+            path: ["error"],
+        });
+    }
+});
 
 export type HathoraYmlDefinition = z.infer<typeof HathoraYmlDefinition>;
+
+const getAvailableTypesFromConfig = (config: HathoraYmlDefinition) => {
+    const availableTypes = map(config.types, type => type.name);
+    const primitives: string[] = Object.values(PRIMITIVES).map((value) => (value as string ));
+    return primitives.concat(availableTypes ?? []);
+};

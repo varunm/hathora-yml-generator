@@ -1,6 +1,7 @@
 import {
     Checkbox,
     FormControl,
+    FormErrorMessage,
     Heading,
     HStack,
     NumberDecrementStepper,
@@ -9,8 +10,10 @@ import {
     NumberInputField,
     NumberInputStepper,
 } from "@chakra-ui/react";
-import { isUndefined } from "lodash";
-import React from "react";
+import { isEmpty, isEqual, isUndefined } from "lodash";
+import React, { useContext } from "react";
+import { ZodIssue } from "zod";
+import { IssuesContext } from "../../util";
 
 interface ITickSectionProps {
     tick: number | undefined;
@@ -18,6 +21,10 @@ interface ITickSectionProps {
 }
 
 export function TickSection({ tick, setTick }: ITickSectionProps) {
+    const issues: ZodIssue[] = useContext(IssuesContext).filter(
+        issue => isEqual(issue.path, ["tick"])
+    );
+
     const onCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {
             setTick(50);
@@ -33,7 +40,7 @@ export function TickSection({ tick, setTick }: ITickSectionProps) {
     return (
         <HStack width='100%'>
             <Heading size='md'>Tick</Heading>
-            <FormControl>
+            <FormControl isInvalid={!isEmpty(issues)}>
                 <HStack>
                     <NumberInput onChange={onInputChange} isDisabled={isUndefined(tick)} value={tick} min={50}>
                         <NumberInputField />
@@ -44,6 +51,7 @@ export function TickSection({ tick, setTick }: ITickSectionProps) {
                     </NumberInput>
                     <Checkbox isChecked={!isUndefined(tick)} onChange={onCheckboxChange}>Enabled</Checkbox>
                 </HStack>
+                <FormErrorMessage>{isEmpty(issues) ? "" : issues[0].message}</FormErrorMessage>
             </FormControl>
         </HStack>
     );
