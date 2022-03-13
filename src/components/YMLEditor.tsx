@@ -3,7 +3,7 @@ import { cloneDeep, keyBy, values } from "lodash";
 import React, { useMemo } from "react";
 import { ZodIssue } from "zod";
 import { Auth, HathoraYmlDefinition, MethodDefinition, TypeDefinition } from "../HathoraTypes";
-import { filterIssues, IssuesContext } from "../util";
+import { IssuesContext } from "../util";
 import { AuthSection } from "./ymlEditorSections/AuthSection";
 import { ErrorSection } from "./ymlEditorSections/ErrorSection";
 import { MethodSection } from "./ymlEditorSections/MethodSection";
@@ -76,7 +76,7 @@ export function YMLEditor({ config, setConfig }: IYMLEditorProps) {
     return (
         <IssuesContext.Provider value={issues}>
             <VStack align='flex-start' width='100%'>
-                <TypeSection types={values(config.types)} setTypes={setTypes} issues={filterIssues(issues, "types")} />
+                <TypeSection types={values(config.types)} setTypes={setTypes} />
                 <MethodSection methods={values(config.methods)} setMethods={setMethods} availableTypes={availableTypes} />
                 <UserStateSection userState={config.userState} setUserState={setUserState} availableTypes={availableTypes}/>
                 <ErrorSection error={config.error} setError={setError} availableTypes={availableTypes}/>
