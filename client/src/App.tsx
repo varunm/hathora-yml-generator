@@ -1,6 +1,6 @@
 import { ChakraProvider, Container, Grid } from "@chakra-ui/react";
 import { cloneDeep, keyBy } from "lodash";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { YMLEditor } from "./components/YMLEditor";
@@ -75,7 +75,6 @@ const AUTH: Auth = {
 };
 
 function App() {
-
     const [config, setConfig] = useState<HathoraYmlDefinition>({
         types: keyBy(TYPES, "name"),
         methods: keyBy(METHODS, "name"),
@@ -96,6 +95,16 @@ function App() {
         }
         setConfig(newConfig);
     };
+
+    useEffect(() => {
+        fetch("/api/hello")
+            .then(response => {
+                console.log(response);
+            });
+        // .then(data => {
+        //     console.log(data);
+        // });
+    }, []);
 
     return (
         <ChakraProvider>
