@@ -1,5 +1,16 @@
 import { VStack } from "@chakra-ui/react";
-import { cloneDeep, keyBy, values } from "lodash";
+import {
+    cloneDeep,
+    filter,
+    forEach,
+    get,
+    isEqual,
+    keyBy,
+    map,
+    matchesProperty,
+    set,
+    values,
+} from "lodash";
 import React, { useMemo } from "react";
 import { ZodIssue } from "zod";
 import { Auth, HathoraYmlDefinition, MethodDefinition, TypeDefinition } from "../HathoraTypes";
@@ -22,11 +33,47 @@ export function YMLEditor({ config, setConfig }: IYMLEditorProps) {
         return values(config.types).map(type => type.name);
     }, [config]);
 
-    const setTypes = (types: TypeDefinition[]) => {
-        setConfig({
+    const setTypes = (types: TypeDefinition[], prevTypeName?: string, newTypeName?: string) => {
+        const newConfig = {
             ...cloneDeep(config),
             types: keyBy(types, "name"),
-        });
+        };
+
+        // Rename type everywhere if necessary
+        if (prevTypeName !== undefined && newTypeName !== undefined && !isEqual(prevTypeName, newTypeName)) {
+            forEach(config.types, type => {
+                if (type.type === "Alias") {
+                    if (type.typeDescription.type === prevTypeName) {
+                        set(newConfig, ["types", type.name, "typeDescription", "type"], newTypeName);
+                    }
+                }
+                if (type.type === "Object") {
+                    forEach(type.fields, (field, fieldName) => {
+                        if (field.type === prevTypeName) {
+                            set(newConfig, ["types", type.name, "fields", fieldName, "type"], newTypeName);
+                        }
+                    });
+                }
+                if (type.type === "Union") {
+                    const newUnions = map(type.unions, label => label === prevTypeName ? newTypeName : label);
+                    set(newConfig, ["types", type.name, "unions"], newUnions);
+                }
+            });
+            forEach(config.methods, method => {
+                forEach(method.fields, (field, fieldName) => {
+                    if (field.type === prevTypeName) {
+                        set(newConfig, ["methods", method.name, "fields", fieldName, "type"], newTypeName);
+                    }
+                });
+            });
+            if (config.userState === prevTypeName) {
+                newConfig.userState = newTypeName;
+            }
+            if (config.error === prevTypeName) {
+                newConfig.error = newTypeName;
+            }
+        }
+        setConfig(newConfig);
     };
 
     const setMethods = (methods: MethodDefinition[]) => {
@@ -64,6 +111,31 @@ export function YMLEditor({ config, setConfig }: IYMLEditorProps) {
         });
     };
 
+    // const updateTypeName = (prevTypeName: string, newTypeName: string) => {
+    //     const newConfig = cloneDeep(config);
+    //     const newTypes = mapValues(config.types, type => {
+    //         if (type.type === "Alias") {
+    //             type.typeDescription.
+    //         }
+    //     });
+    // }
+
+    const filtered = filter(config, matchesProperty("type", "UserState"));
+
+    const updateTypeNamesInConfig = (prevTypeName: string, newTypeName: string) => {
+        const newConfig = cloneDeep(config);
+
+        forEach(config.types, type => {
+            if (type.type === "Alias") {
+                if (get(config, ["typeDescription", "type"]) === prevTypeName) {
+                    set(newConfig, ["typeDescription", "type"], newTypeName);
+                }
+            }
+        });
+
+        setConfig(newConfig);
+    };
+
     const issues: ZodIssue[] = useMemo(() => {
         const parsed = HathoraYmlDefinition.safeParse(config);
         if (!parsed.success) {
@@ -76,7 +148,7 @@ export function YMLEditor({ config, setConfig }: IYMLEditorProps) {
     return (
         <IssuesContext.Provider value={issues}>
             <VStack align='flex-start' width='100%'>
-                <TypeSection types={values(config.types)} setTypes={setTypes} />
+                <TypeSection types={values(config.types)} setTypes={setTypes} updateTypeNamesInConfig={updateTypeNamesInConfig} />
                 <MethodSection methods={values(config.methods)} setMethods={setMethods} availableTypes={availableTypes} />
                 <UserStateSection userState={config.userState} setUserState={setUserState} availableTypes={availableTypes}/>
                 <ErrorSection error={config.error} setError={setError} availableTypes={availableTypes}/>

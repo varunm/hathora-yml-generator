@@ -23,16 +23,15 @@ import { ZodIssue } from "zod";
 import { EnumType, TypeDefinition } from "../../HathoraTypes";
 import { IssuesContext } from "../../util";
 import { AddIconButton } from "../iconButtons/AddIconButton";
-import { TypeNameHeader } from "../TypeNameHeader";
 
 interface IEnumEditorProps {
     definition: EnumType;
     updateDefinition: (definition: TypeDefinition) => void;
-    deleteType: () => void;
+    typeNameHeader: JSX.Element;
 }
 
 export function EnumEditor({
-    definition, updateDefinition, deleteType,
+    definition, updateDefinition, typeNameHeader,
 }: IEnumEditorProps) {
     const issues: ZodIssue[] = useContext(IssuesContext).filter(
         issue => difference(["types", definition.name, "enums"], issue.path).length === 0
@@ -67,7 +66,7 @@ export function EnumEditor({
     return (
         <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
             <HStack>
-                <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+                {typeNameHeader}
                 <AddIconButton onClick={addEnum} />
             </HStack>
             <FormControl isInvalid={!isEmpty(issues)}>

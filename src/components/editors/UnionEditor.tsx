@@ -21,18 +21,17 @@ import { UnionType, TypeDefinition } from "../../HathoraTypes";
 import { IssuesContext } from "../../util";
 import { AddIconButton } from "../iconButtons/AddIconButton";
 import { CheckIconButton } from "../iconButtons/CheckIconButton";
-import { TypeNameHeader } from "../TypeNameHeader";
 import { TypeSelector } from "../TypeSelector";
 
 interface IUnionEditorProps {
     definition: UnionType;
     updateDefinition: (definition: TypeDefinition) => void;
-    deleteType: () => void;
     availableTypes: string[];
+    typeNameHeader: JSX.Element;
 }
 
 export function UnionEditor({
-    definition, updateDefinition, deleteType, availableTypes,
+    definition, updateDefinition, availableTypes, typeNameHeader,
 }: IUnionEditorProps) {
     const issues: ZodIssue[] = useContext(IssuesContext).filter(
         issue => difference(["types", definition.name, "unions"], issue.path).length === 0
@@ -81,7 +80,7 @@ export function UnionEditor({
     return (
         <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
             <HStack>
-                <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+                {typeNameHeader}
                 <AddIconButton onClick={addUnion} />
             </HStack>
             <FormControl hidden={!addMode}>

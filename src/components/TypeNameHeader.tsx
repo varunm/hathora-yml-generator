@@ -19,24 +19,26 @@ interface ITypeNameHeaderProps {
     definition: TypeDefinition;
     updateDefinition: (definition: TypeDefinition) => void;
     deleteType: () => void;
+    updateTypeNamesInConfig: (prevTypeName: string, newTypeName: string) => void;
 }
 
 export function TypeNameHeader({
-    definition, updateDefinition, deleteType,
+    definition, updateDefinition, deleteType, updateTypeNamesInConfig,
 }: ITypeNameHeaderProps) {
     const issues: ZodIssue[] = useContext(IssuesContext).filter(
         issue => isEqual(issue.path, ["types", definition.name, "name"])
     );
 
     const onSubmit = (nextValue: string) => {
-        if (definition.name === nextValue) {
+        if (definition.name === nextValue || isEmpty(nextValue)) {
             return;
         }
-
+        console.log("updating definition");
         updateDefinition({
             ...definition,
             name: nextValue,
         });
+        // updateTypeNamesInConfig(definition.name, nextValue);
     };
 
     return (
@@ -46,6 +48,7 @@ export function TypeNameHeader({
                     defaultValue={definition.name}
                     onSubmit={onSubmit}
                     fontWeight='semibold'
+                    placeholder="TypeName"
                 >
                     <EditablePreview />
                     <EditableInput />

@@ -6,28 +6,27 @@ import {
     Tooltip,
     VStack,
 } from "@chakra-ui/react";
-import { isEmpty, isEqual } from "lodash";
+import { difference, isEmpty } from "lodash";
 import React, { useContext } from "react";
 import { RiQuestionMark } from "react-icons/ri";
 import { VscSymbolArray } from "react-icons/vsc";
 import { ZodIssue } from "zod";
 import { AliasType, TypeDefinition } from "../../HathoraTypes";
 import { IssuesContext } from "../../util";
-import { TypeNameHeader } from "../TypeNameHeader";
 import { TypeSelector } from "../TypeSelector";
 
 interface IAliasEditorProps {
     definition: AliasType;
     updateDefinition: (definition: TypeDefinition) => void;
-    deleteType: () => void;
     availableTypes: string[];
+    typeNameHeader: JSX.Element;
 }
 
 export function AliasEditor({
-    definition, updateDefinition, deleteType, availableTypes,
+    definition, updateDefinition, availableTypes, typeNameHeader,
 }: IAliasEditorProps) {
     const issues: ZodIssue[] = useContext(IssuesContext).filter(
-        issue => isEqual(issue.path, ["types", definition.name, "typeDescription", "type"])
+        issue => difference(["types", definition.name, "typeDescription"], issue.path).length === 0
     );
 
     const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -62,7 +61,7 @@ export function AliasEditor({
 
     return (
         <VStack align='flex-start' key={definition.name} backgroundColor='gray.100' width='100%' padding='2'>
-            <TypeNameHeader definition={definition} updateDefinition={updateDefinition} deleteType={deleteType} />
+            {typeNameHeader}
             <FormControl isInvalid={!isEmpty(issues)}>
                 <HStack direction='row'>
                     <TypeSelector onChange={onSelect} selectedValue={definition.typeDescription.type} availableTypes={availableTypes}/>

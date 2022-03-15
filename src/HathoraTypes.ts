@@ -135,6 +135,13 @@ export const HathoraYmlDefinition = z.object({
 
         if (type.type === "Object") {
             forEach(type.fields, (field, fieldName) => {
+                if (field.type === type.name) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Recursive types not allowed",
+                        path: ["types", type.name, "fields", fieldName, "type"],
+                    });
+                }
                 if (!availableTypes.includes(field.type)) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,

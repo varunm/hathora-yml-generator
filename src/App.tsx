@@ -13,15 +13,24 @@ const TYPES: TypeDefinition[] = [
         type: "Alias",
         typeDescription: {
             isArray: true,
-            type: "asd",
+            type: "boolean",
         },
     },
     {
         name: "UserState",
         type: "Object",
         fields: {
-            "id": {
-                type: "stringg", isArray: true, isOptional: true,
+            "ids": {
+                type: "string", isArray: true, isOptional: false,
+            },
+        },
+    },
+    {
+        name: "AnotherObject",
+        type: "Object",
+        fields: {
+            "isReady": {
+                type: "MyAlias", isArray: false, isOptional: true,
             },
         },
     },
@@ -33,7 +42,7 @@ const TYPES: TypeDefinition[] = [
     {
         name: "MyUnion",
         type: "Union",
-        unions: ["UserState", "MyEnumm", "testtest"],
+        unions: ["MyAlias", "int", "string"],
     },
 ];
 
@@ -47,19 +56,23 @@ const METHODS: MethodDefinition[] = [
         },
     },
     {
-        name: "DisableTest",
+        name: "disableTest",
         fields: {
             "state": {
-                type: "userStatee", isArray: false, isOptional: false,
+                type: "UserState", isArray: false, isOptional: false,
             },
         },
     },
 ];
 
-const USER_STATE = "";
-const ERROR = "stringg";
-const TICK: number | undefined = 30;
-const AUTH: Auth = {};
+const USER_STATE = "UserState";
+const ERROR = "string";
+const TICK: number | undefined = 50;
+const AUTH: Auth = {
+    "anonymous": {
+        "separator": "",
+    },
+};
 
 function App() {
 

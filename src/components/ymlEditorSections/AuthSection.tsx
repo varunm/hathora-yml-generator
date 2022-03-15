@@ -91,7 +91,7 @@ export function AuthSection({ auth, setAuth }: IAuthSectionProps) {
                     <VStack align='flex-start' backgroundColor='gray.100' width='100%'>
                         <HStack>
                             <Heading size='sm'>Anonymous</Heading>
-                            <Checkbox onChange={onAnonymousToggle}>Enabled</Checkbox>
+                            <Checkbox isChecked={!isEmpty(auth.anonymous)} onChange={onAnonymousToggle}>Enabled</Checkbox>
                         </HStack>
 
                         <FormControl id="separator" isDisabled={isEmpty(auth.anonymous)} isInvalid={!isEmpty(anonymousAuthIssues)}>
@@ -111,7 +111,7 @@ export function AuthSection({ auth, setAuth }: IAuthSectionProps) {
                     <VStack align='flex-start' backgroundColor='gray.100' width='100%'>
                         <HStack>
                             <Heading size='sm'>Google</Heading>
-                            <Checkbox onChange={onGoogleToggle}>Enabled</Checkbox>
+                            <Checkbox isChecked={!isEmpty(auth.google)} onChange={onGoogleToggle}>Enabled</Checkbox>
                         </HStack>
 
                         <FormControl id="clientId" isDisabled={isEmpty(auth.google)} isInvalid={!isEmpty(googleAuthIssues)}>
