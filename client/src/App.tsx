@@ -1,11 +1,12 @@
 import { ChakraProvider, Container, Grid } from "@chakra-ui/react";
-import { cloneDeep, keyBy } from "lodash";
+import { cloneDeep, get, keyBy, mapValues } from "lodash";
 import React, { useEffect, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { YMLEditor } from "./components/YMLEditor";
 import { YMLViewer } from "./components/YMLViewer";
 import { Auth, HathoraYmlDefinition, MethodDefinition, TypeDefinition } from "./HathoraTypes";
+import yaml from "js-yaml";
 
 const TYPES: TypeDefinition[] = [
     {
@@ -74,6 +75,15 @@ const AUTH: Auth = {
     },
 };
 
+// const typeDescriptionFromString = (type: TypeDefinition): TypeDescription => {
+//     if ()
+//     return {
+//         type: description.replace("[]", "").replace("?", ""),
+//         isArray: description.includes("[]"),
+//         isOptional: description.includes("?"),
+//     };
+// };
+
 function App() {
     const [config, setConfig] = useState<HathoraYmlDefinition>({
         types: keyBy(TYPES, "name"),
@@ -97,13 +107,19 @@ function App() {
     };
 
     useEffect(() => {
-        fetch("/api/hello")
-            .then(response => {
-                console.log(response);
+        fetch("http://localhost:5000/load")
+            .then(response => response.text())
+            .then(data => {
+                const loadedConfig = yaml.load(data);
+                // console.log(loadedConfig);
+                const loadedTypes = get(loadedConfig, "types");
+                console.log(loadedTypes);
+                const types = mapValues(loadedTypes, typeDescriptionFromString);
+                console.log(types);
+                // setConfig({
+                //     types: mapValues(get(loadedConfig, "types"), typeDescriptionFromString),
+                // });
             });
-        // .then(data => {
-        //     console.log(data);
-        // });
     }, []);
 
     return (

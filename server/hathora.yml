@@ -1,0 +1,26 @@
+types:
+  MyAlias: boolean
+  UserState:
+    ids: string[]
+  AnotherObject:
+    isReady: MyAlias?
+  MyEnum:
+    - VAL_1
+    - VAL_2
+  MyUnion:
+    - MyAlias
+    - int
+    - string
+methods:
+  createTest:
+    first: string
+  disableTest:
+    state: UserState
+  newMethod:
+    newProperty: MyUnion
+userState: UserState
+error: string
+tick: 50
+auth:
+  anonymous:
+    separator: ''

@@ -1,13 +1,11 @@
 import { VStack } from "@chakra-ui/react";
 import {
     cloneDeep,
-    filter,
     forEach,
     get,
     isEqual,
     keyBy,
     map,
-    matchesProperty,
     set,
     values,
 } from "lodash";
@@ -110,17 +108,6 @@ export function YMLEditor({ config, setConfig }: IYMLEditorProps) {
             auth,
         });
     };
-
-    // const updateTypeName = (prevTypeName: string, newTypeName: string) => {
-    //     const newConfig = cloneDeep(config);
-    //     const newTypes = mapValues(config.types, type => {
-    //         if (type.type === "Alias") {
-    //             type.typeDescription.
-    //         }
-    //     });
-    // }
-
-    const filtered = filter(config, matchesProperty("type", "UserState"));
 
     const updateTypeNamesInConfig = (prevTypeName: string, newTypeName: string) => {
         const newConfig = cloneDeep(config);

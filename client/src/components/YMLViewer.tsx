@@ -1,4 +1,4 @@
-import { Flex } from "@chakra-ui/react";
+import { Button, Flex } from "@chakra-ui/react";
 import yaml from "js-yaml";
 import { mapValues } from "lodash";
 import React from "react";
@@ -38,11 +38,26 @@ export function YMLViewer({ config }: IYMLViewerProps) {
         types: mapValues(config.types, type => toString(type)),
         methods: mapValues(config.methods, method => toStringMethod(method)),
     };
+
+    const onSave = () => {
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                yaml: yaml.dump(stringifiedConfig),
+            }),
+        };
+        fetch("http://localhost:5000/save", requestOptions);
+    };
+
     return (
         <Flex display='contents' width='50%'>
             <SyntaxHighlighter language="yaml">
                 {yaml.dump(stringifiedConfig)}
             </SyntaxHighlighter>
+            <Button onClick={onSave}>Save</Button>
         </Flex>
     );
 }

@@ -5,7 +5,7 @@
     "server": "nodemon server.js",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "dev": "concurrently --kill-others-on-fail \"nodemon server.js\" \"vite\""
+    "dev": "concurrently --kill-others-on-fail \"nodemon ./server/server.js\" \"vite\""
   },
   "dependencies": {
     "@chakra-ui/icons": "^1.1.7",
@@ -17,6 +17,7 @@
     "@types/uuid": "^8.3.4",
     "body-parser": "^1.19.2",
     "concurrently": "^7.0.0",
+    "cors": "^2.8.5",
     "express": "^4.17.3",
     "framer-motion": "^6.2.8",
     "js-yaml": "^4.1.0",
